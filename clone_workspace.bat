@@ -1,14 +1,15 @@
 @echo off
-set /p root="Enter root path: (D:\workspace\repos)" || SET "root=D:\workspace\repos"
+set /p root="Enter root path: (D:\LOCAL_GIT)" || SET "root=D:\LOCAL_GIT"
 set /p name="Enter project name: "
-set /p new_git_repo="Make new git repo [y/n]: "
+set /p git_link="Enter git link: "
 set /p is_python="Python project: [y/n]: "
 set /p new_venv="Make new virtual env: [y/n]: "
 set full_path="%root%\%name%"
 
-IF NOT EXIST %full_path% ( mkdir %full_path% )
-cd /D "%full_path%"
-:: python stuff
+cd /D %root%
+git clone %git_link%
+cd /D %full_path%
+
 IF "%is_python%" == "y" (
         IF "%new_venv%" == "y" ( 
 			virtualenv D:\VENV\%name%
@@ -28,13 +29,3 @@ IF "%is_python%" == "y" (
 	D:/VENV/%name%/Scripts/python.exe -m pip install -U "pylint<2.0.0"
 )
 python "%cd%\append_project.py" %name% %full_path%
-:: creating template files
-echo.> README.md
-IF "%new_git_repo%" == "y" (
-	:: git publish
-	git init
-	git add README.md
-	git commit -m "first commit"
-	git remote add origin git@github.com:yvovonberg/%name%.git
-	start "" https://github.com/new
-)
