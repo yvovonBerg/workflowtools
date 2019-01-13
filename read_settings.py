@@ -13,7 +13,7 @@ class VSCodeSettings(object):
         self.root_path = os.path.join(root_path, '.vscode', 'settings.json')
         self.project_data = {}
         self._read_settings()
-    
+
     def _read_settings(self):
         if not os.path.exists(self.root_path):
             print "Cannot find: {}".format(self.root_path)
@@ -34,7 +34,10 @@ class VSCodeSettings(object):
         if not 'python.pythonPath' in self.project_data.keys():
             return 
         
-        return self.project_data['python.pythonPath']
+        path = self.project_data['python.pythonPath']
+        if 'python.exe' in path:
+            return os.path.dirname(path)
+        return path
 
 if __name__ == "__main__":
     path = sys.argv[1]

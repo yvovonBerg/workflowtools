@@ -7,16 +7,17 @@ import argparse
 import logging
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format="%(message)s")
 
 from publisher import SpreadsheetPublisher
 from settings import MONTH, TODAY, NOW, TIME_ROOT, LABELS, LAST_STOPPED, ACTIVE_TASK
 
 
 class TimeManager(object):
-    def __init__(self):
-        self.time_data_file = os.path.join(TIME_ROOT, 'timelogs', MONTH,
-                                           '{}.json'.format(TODAY))
+    def __init__(self, time_file=None):
+        self.time_data_file = time_file or os.path.join(
+            TIME_ROOT, 'timelogs', MONTH, '{}.json'.format(TODAY)
+        )
         self.time_data = {LABELS: [], ACTIVE_TASK: "", LAST_STOPPED: ""}
         self._read_task_data()
 
@@ -69,7 +70,7 @@ class TimeManager(object):
 
         return ""
 
-    def start_new_task(self, label, task_type):
+    def start_new_task(self, label, task_type='default', ticket=None):
         """
             Starts a brand new tasks. Stops all active tasks first.
             This will also clear the last stopped cache to 
@@ -88,6 +89,7 @@ class TimeManager(object):
             'label': label,
             'work_items': [new_work_entry],
             'type': task_type,
+            'ticket': ticket,
             'id': task_id
         })
         self.time_data[ACTIVE_TASK] = task_id
@@ -165,20 +167,37 @@ class TimeManager(object):
         self.time_data[ACTIVE_TASK] = last_stopped
         self._write_task_data()
 
+def are_you_sure(args):
+    if not args.silent:
+        sure = raw_input("Are you sure: [Y/n] ") or "y"
+        if sure != "y":
+            return False
+
+    return True
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '-s', '--stop', help='Stop all tasks', action='store_true')
+        '-s', '--stop', help='Stop all tasks', action='store_true'
+    )
     parser.add_argument(
         '-d', '--removeall', help='Remove all tasks', action='store_true')
     parser.add_argument('-n', '--label', help='Add task')
     parser.add_argument('-t', '--type', help='Add task type')
+    parser.add_argument('-ti', '--ticket', help='Add ticket')
     parser.add_argument(
-        '-p', '--publish', help='Publish this day', action="store_true")
+        '-p', '--publish', help='Publish (defaults to today, see --fimefile)',
+         action="store_true"
+    )
+    parser.add_argument(
+        '-tf', '--timefile', help='Path to time file'
+    )
+    parser.add_argument(
+        '-q', '--silent', help='Silent say Yes to all questions', action="store_true"
+    )     
     parser.add_argument(
         '-at',
-        '--activetasks',
+        '--activetask',
         help='Return activate tasks',
         action="store_true"
     )
@@ -192,14 +211,15 @@ def main():
     )
 
     args = parser.parse_args()
-    tm = TimeManager()
+    tm = TimeManager(time_file=args.timefile)
 
     if args.publish:
         logger.info('Publishing data')
-        sure = raw_input("Are you sure: [Y/n] ") or "y"
-        if sure != "y":
-            return
-        pdf = SpreadsheetPublisher(data=tm.time_data)
+        if not are_you_sure(args): return
+        tm.stop_all_tasks()
+        pdf = SpreadsheetPublisher(
+            data=tm.time_data
+        )
         pdf.publish()
         return
 
@@ -210,36 +230,39 @@ def main():
 
     if args.removeall:
         logger.info('About to removing all tasks')
-        sure = raw_input("Are you sure: [Y/n] ") or "y"
-        if sure != "y":
-            return
-
+        if not are_you_sure(args): return
         logger.info('Removing all tasks')
         tm.remove_all_tasks()
         return
 
-    if args.activetasks:
-        logger.info(tm.get_active_task(include_labels=True))
+    if args.activetask:
+        data = tm.get_active_task(include_labels=True)
+        if not data:
+            logger.info('No active tasks')
+            return 
+        logger.info('LABEL:{} | {}'.format(data['label'], data['id']))
         return
 
     if args.list:
         data = tm.labels
         for d in data:
             logger.info('LABEL:{} | {}'.format(d['label'], d['id']))
-            work_items = d['work_items']
-            for w in work_items:
-                logger.info(w)
-            logger.info("")
         return
 
     if args.resume:
         logger.info('Resume last stopped task')
         tm.resume_last_stopped()
+        logger.info('Active task: {}'.format(tm.get_active_task(
+            include_labels=True)['label'])
+        )
         return
 
     if args.label:
         logger.info('Creating new task')
-        tm.start_new_task(label=args.label, task_type=args.type)
+        tm.start_new_task(
+            label=args.label, task_type=args.type,
+            ticket=args.ticket
+        )
 
 
 if __name__ == "__main__":

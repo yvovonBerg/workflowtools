@@ -27,7 +27,7 @@ IF "%is_python%" == "y" (
 	cd ..
 	D:/VENV/%name%/Scripts/python.exe -m pip install -U "pylint<2.0.0"
 )
-python "%cd%\append_project.py" %name% %full_path%
+python append_project.py %name% %full_path%
 :: creating template files
 echo.> README.md
 IF "%new_git_repo%" == "y" (
