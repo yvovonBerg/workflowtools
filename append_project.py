@@ -17,6 +17,13 @@ def append_project(name, path):
             project_data = json.load(project_file)
         except ValueError:
             pass
+    
+    
+    for p in project_data:
+        if path in p['rootPath']:
+            print "Path has already been added to project manager"
+            return
+
     project_data.append({
         "name": name,
         "rootPath": path,

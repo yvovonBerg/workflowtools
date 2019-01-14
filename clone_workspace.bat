@@ -1,5 +1,5 @@
 @echo off
-set /p root="Enter root path: (D:\LOCAL_GIT)" || SET "root=D:\LOCAL_GIT"
+set /p root="Enter root path: (D:\workspace\repos)" || SET "root=D:\workspace\repos"
 set /p name="Enter project name: "
 set /p git_link="Enter git link: "
 set /p is_python="Python project: [y/n]: "
@@ -27,5 +27,9 @@ IF "%is_python%" == "y" (
 	echo } >> settings.json
 	cd ..
 	D:/VENV/%name%/Scripts/python.exe -m pip install -U "pylint<2.0.0"
+	IF EXIST %full_path%\requirements.txt (
+		D:/VENV/%name%/Scripts/python.exe -m pip install -r %full_path%\requirements.txt
+	)
+	
 )
-python "%cd%\append_project.py" %name% %full_path%
+python "U:\tools\internal\workflowtools\append_project.py" %name% %full_path%
