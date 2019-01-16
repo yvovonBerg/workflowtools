@@ -50,11 +50,12 @@ class TicketJiraPublisher(object):
             auth=(secret_data[1], secret_data[2])
         )
 
-    def get_work_entries(self, ticket):
-        issue = self.jira.issue(ticket)
+    def get_work_entries(self, issue):
         return issue.fields.worklog.worklogs
 
     def is_unique(self, work_entries, start_time):
+        if not work_entries:
+            return True
         for w in work_entries:
             friendly_time = str(w.started).replace("T", " ").split(".")[0]
             if friendly_time == str(start_time):
@@ -68,18 +69,27 @@ class TicketJiraPublisher(object):
 
         for item in self.data[LABELS]:
             if item["type"] != "jira": continue
-            
+            if not item["ticket"]: continue
+
             # when the work entry was started for the first time
             created = item['work_items'][0]['start_time']
             start_time = datetime.datetime.strptime(created, TIME_FORMAT)
 
             # total elapsed time on this ticket
             elapsed_time = get_elapsed_time(item['work_items'])
+            try:
+                jira_issue_object = self.jira.issue(item["ticket"])
+            except:
+                logger.warning("Cannot fetch: {}".format(item["ticket"]))
+                continue
 
-            work_entries = self.get_work_entries(ticket=item["ticket"])
+            work_entries = self.get_work_entries(issue=jira_issue_object)
 
-            if not self.is_unique(work_entries=work_entries, start_time=start_time):
-                logger.warning("Skipping: {} with start time: {} already exist".format(
+            if not self.is_unique(
+                work_entries=work_entries, start_time=start_time
+                ):
+                logger.warning(
+                    "Skipping: {} start time: {} already exist".format(
                     item["ticket"],
                     start_time
                     )
@@ -97,8 +107,8 @@ class TicketJiraPublisher(object):
                 comment=item["label"],
                 started=start_time
             ) 
-            logger.info("Created worklog for ticket: \
-                {} task: {} elapsed time: {}m".format(
+            logger.info(
+                "New worklog {} task: {} elapsed time: {}m".format(
                 item["ticket"],
                 item["label"],
                 elapsed_time
