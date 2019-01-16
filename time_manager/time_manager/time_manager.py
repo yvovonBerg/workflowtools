@@ -9,7 +9,7 @@ import logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 
-from publisher import SpreadsheetPublisher
+import publisher
 from settings import MONTH, TODAY, NOW, TIME_ROOT, LABELS, LAST_STOPPED, ACTIVE_TASK
 
 
@@ -204,6 +204,8 @@ def main():
     parser.add_argument(
         '-l', '--list', help='Return all tasks', action="store_true")
     parser.add_argument(
+        '-spp', '--spreadsheetpublishonly', help='Only do spreadsheet publish', action="store_true")
+    parser.add_argument(
         '-r',
         '--resume',
         help='Continue last stopped task',
@@ -217,10 +219,12 @@ def main():
         logger.info('Publishing data')
         if not are_you_sure(args): return
         tm.stop_all_tasks()
-        pdf = SpreadsheetPublisher(
-            data=tm.time_data
-        )
+        pdf = publisher.SpreadsheetPublisher(data=tm.time_data)
         pdf.publish()
+
+        if not args.spreadsheetpublishonly:
+            jira = publisher.TicketJiraPublisher(data=tm.time_data)
+            jira.publish()
         return
 
     if args.stop:
