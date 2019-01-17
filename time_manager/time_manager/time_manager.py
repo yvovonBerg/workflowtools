@@ -192,9 +192,10 @@ def main():
     parser.add_argument(
         '-tf', '--timefile', help='Path to time file'
     )
+    
     parser.add_argument(
         '-q', '--silent', help='Silent say Yes to all questions', action="store_true"
-    )     
+    )    
     parser.add_argument(
         '-at',
         '--activetask',
@@ -225,6 +226,9 @@ def main():
         if not args.spreadsheetpublishonly:
             jira = publisher.TicketJiraPublisher(data=tm.time_data)
             jira.publish()
+
+            youtrack = publisher.TicketYoutrackPublisher(data=tm.time_data)
+            youtrack.publish()
         return
 
     if args.stop:

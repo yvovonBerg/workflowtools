@@ -12,3 +12,6 @@ MONTH = datetime.datetime.today().strftime("%Y-%m")
 API_JIRA_SECRET = os.path.join(
     TIME_ROOT, 'configs', 'jira.txt'
 )
+API_YOUTRACK_SECRET = os.path.join(
+    TIME_ROOT, 'configs', 'yt.txt'
+)
