@@ -34,6 +34,8 @@ def open_secret(file):
     2. user
     3. password
     """""
+    if not os.path.exists(file):
+        return 
     with open(file, 'r') as secret_file:
         return [s.replace("\n", "") for s in secret_file.readlines()]
 
@@ -262,8 +264,9 @@ class SpreadsheetPublisher(object):
         worksheet = workbook.add_worksheet()
         worksheet.set_column(0, 0, 50)  
         worksheet.set_column(1, 0, 15)
-        worksheet.set_column(2, 0, 15)
-        worksheet.set_column(3, 0, 40)
+        worksheet.set_column(2, 0, 12)
+        worksheet.set_column(3, 0, 10)
+        worksheet.set_column(4, 0, 30)
 
         row = 0
         col = 0
@@ -285,7 +288,17 @@ class SpreadsheetPublisher(object):
             worksheet.write(row, col + 1, str(item['ticket']))
             worksheet.write(row, col + 2, elapsed_time)
             worksheet.write(row, col + 3, created)
-            worksheet.write(row, col + 4, item['type'])
+            ticket_type = item['type']
+            link = ""
+            if self.youtrackhost is not None and self.jirahost is not None:
+
+                if ticket_type == "yt":
+                    link = self.youtrackhost[0] + "/issue/" + item['ticket']
+                elif ticket_type == "jira":
+                    link = self.jirahost[0] + "/browse/" + item['ticket']
+            else:
+                link = item["type"]
+            worksheet.write(row, col + 4, link)
             row += 1
 
         workbook.close()
